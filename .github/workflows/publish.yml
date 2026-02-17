@@ -1,0 +1,75 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish to npm
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Get version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: v${{ steps.version.outputs.VERSION }}
+          body: |
+            ## @opstrails/sdk v${{ steps.version.outputs.VERSION }}
+
+            ### Installation
+
+            ```bash
+            # npm
+            npm install @opstrails/sdk@${{ steps.version.outputs.VERSION }}
+
+            # yarn
+            yarn add @opstrails/sdk@${{ steps.version.outputs.VERSION }}
+
+            # pnpm
+            pnpm add @opstrails/sdk@${{ steps.version.outputs.VERSION }}
+            ```
+
+            ### Links
+            - [npm package](https://www.npmjs.com/package/@opstrails/sdk/v/${{ steps.version.outputs.VERSION }})
+            - [Documentation](https://github.com/OpsTrails/opstrails-sdk#readme)
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.VERSION, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

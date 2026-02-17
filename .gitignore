@@ -1,0 +1,15 @@
+node_modules/
+dist/
+coverage/
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*
+.env
+.env.local
+.env.*.local
+*.tsbuildinfo
